@@ -5,7 +5,7 @@ import re
 
 from airflow.models import Variable
 from airflow.operators.python import PythonOperator
-from airflow.exception import AirflowSkipException
+from airflow.exceptions import AirflowSkipException
 
 AIRFLOW_ENV_PROD = 'prod'
 AIRFLOW_ENV_UAT = 'uat'
