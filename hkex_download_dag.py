@@ -5,9 +5,10 @@ import os
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.python import PythonOperator
+from airflow.sensors.date_time import DateTimeSensorAsync
 from airflow.utils.task_group import TaskGroup
 from datetime import datetime, timedelta
-from utils.misc import GetEmailReceipts, CallFuncWithTaskExecDate
+from utils.misc import GetEmailReceipts, CallFuncWithTaskExecDate, GetTargetTime
 
 
 
@@ -33,11 +34,22 @@ dag = DAG(dag_id="hkex_dag",
           default_args=default_args,
           catchup=False)
 
-with TaskGroup(group_id='HKEx_ListOfSecurities', dag=dag) as list_of_sec:
+with TaskGroup(group_id='schedule_0715', dag=dag) as schedule_0715:
+    dts = DateTimeSensorAsync(
+    task_id="dt_async",
+    dag=dag,
+    target_time=GetTargetTime(7, 15)
+    )
+    with TaskGroup(group_id='HKEx_ListOfSecurities', dag=dag) as list_of_sec:
 
-    with TaskGroup(group_id='English', dag=dag) as english:
-        extract1 = PythonOperator(
-        task_id="Download",
-        dag=dag,
-        python_callable=CallFuncWithTaskExecDate,
-        op_kwargs={'Path': ls_dir, 'Func':dl.HKEx_ListOfSecuritiesDownload})
+        with TaskGroup(group_id='English', dag=dag) as english:
+            extract1 = PythonOperator(
+            task_id="Download",
+            dag=dag,
+            python_callable=CallFuncWithTaskExecDate,
+            op_kwargs={'Path': ls_dir, 'Func':dl.HKEx_ListOfSecuritiesDownload})
+
+            extract1
+    dts >> list_of_sec
+
+schedule_0715
